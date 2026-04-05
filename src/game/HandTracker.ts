@@ -1,7 +1,7 @@
 import { Hands, Results, HAND_CONNECTIONS } from '@mediapipe/hands';
 import { Camera } from '@mediapipe/camera_utils';
 
-export type GestureType = 'NONE' | 'THUNDER' | 'FIRE' | 'WIND' | 'SHADOW' | 'FIST' | 'ALL';
+export type GestureType = 'NONE' | 'THUNDER' | 'FIRE' | 'WIND' | 'SHADOW' | 'FIST' | 'ALL' | 'THUMB_UP';
 
 export interface GestureDebugInfo {
   thumb: boolean;
@@ -186,11 +186,12 @@ export class HandTracker {
         const extendedCount = [isThumbExt, isIndexExt, isMiddleExt, isRingExt, isPinkyExt].filter(Boolean).length;
         const extendedCountNoThumb = [isIndexExt, isMiddleExt, isRingExt, isPinkyExt].filter(Boolean).length;
 
-        // Priority: FIRE > SHADOW > WIND > THUNDER > FIST
+        // Priority: FIRE > SHADOW > WIND > THUNDER > THUMB_UP > FIST
         if (this.checkFire(landmarks)) currentGesture = 'FIRE';
         else if (this.checkShadow(landmarks)) currentGesture = 'SHADOW';
         else if (this.checkWind(extendedCount, palmInward)) currentGesture = 'WIND';
         else if (this.checkThunder(extendedCount, palmInward)) currentGesture = 'THUNDER';
+        else if (this.checkThumbUp(isThumbExt, extendedCountNoThumb)) currentGesture = 'THUMB_UP';
         else if (this.checkFist(landmarks, extendedCountNoThumb)) currentGesture = 'FIST';
       }
     }
@@ -293,5 +294,9 @@ export class HandTracker {
     }
     
     return bentDownCount >= 3;
+  }
+
+  private checkThumbUp(isThumbExt: boolean, extendedCountNoThumb: number): boolean {
+    return isThumbExt && extendedCountNoThumb === 0;
   }
 }

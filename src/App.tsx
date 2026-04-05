@@ -120,7 +120,7 @@ export default function App() {
     });
 
     trackerRef.current.start().catch(err => {
-      setErrorMsg('未检测到摄像头，请检查权限');
+      setErrorMsg(`摄像头启动失败: ${err.message || '请检查权限'}`);
     });
 
     return () => {
@@ -237,6 +237,43 @@ export default function App() {
   const [confirmState, setConfirmState] = useState(0); // 0: wait THUNDER, 1: wait FIST
   const confirmStateTimeRef = useRef(0);
 
+  // Keyboard simulation
+  useEffect(() => {
+    if (!mouseMode) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      let gesture: GestureType = 'NONE';
+      switch (e.key) {
+        case '1': gesture = 'THUNDER'; break;
+        case '2': gesture = 'FIST'; break;
+        case '3': gesture = 'THUMB_UP'; break;
+        case '4': gesture = 'FIRE'; break;
+        case '5': gesture = 'WIND'; break;
+        case '6': gesture = 'SHADOW'; break;
+        case '7': gesture = 'ALL'; break;
+        default: return;
+      }
+      
+      setCurrentGesture(gesture);
+      setRawGesture(gesture);
+      lastValidGestureTimeRef.current = Date.now();
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (['1', '2', '3', '4', '5', '6', '7'].includes(e.key)) {
+        setCurrentGesture('NONE');
+        setRawGesture('NONE');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [mouseMode]);
+
   // Handle gestures
   useEffect(() => {
     const now = Date.now();
@@ -261,7 +298,7 @@ export default function App() {
               return c + 1;
             });
           }
-        } else if (currentGesture === 'FIST') {
+        } else if (currentGesture === 'FIST' || currentGesture === 'THUMB_UP') {
           // Success
           setConfirmState(0);
           setActionPrompt('');
@@ -277,7 +314,7 @@ export default function App() {
           setConfirmState(0);
           setActionPrompt('');
         } else if (currentGesture === 'THUNDER' && now - confirmStateTimeRef.current > 500) {
-           setActionPrompt('请快速握拳');
+           setActionPrompt('请快速握拳或合上四指');
         }
       }
     } else if (gameState === 'PLAYING') {
@@ -640,19 +677,37 @@ export default function App() {
             <div className="bg-gray-900 p-8 rounded-xl border border-red-500/50 max-w-md text-center">
               <p className="text-red-400 text-xl mb-6">{errorMsg}</p>
               <button 
-                onClick={() => setErrorMsg('')}
+                onClick={() => {
+                  setErrorMsg('');
+                  setMouseMode(true);
+                  setHandDetected(true);
+                }}
                 className="px-6 py-2 bg-red-500/20 border border-red-500 rounded hover:bg-red-500/40"
               >
-                使用鼠标模拟 (未实现)
+                使用键盘模拟 (1-7数字键)
               </button>
             </div>
           </div>
         )}
 
         {/* Status Indicator */}
-        <div className="absolute bottom-6 right-6 flex items-center gap-3 bg-black/50 px-4 py-2 rounded-full border border-white/10">
-          <span className="text-sm text-gray-300">手势检测</span>
-          <div className={`w-3 h-3 rounded-full ${handDetected ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' : 'bg-gray-600'}`} />
+        <div className="absolute bottom-6 right-6 flex flex-col items-end gap-2">
+          {mouseMode && (
+            <div className="bg-black/50 px-4 py-2 rounded-lg border border-white/10 text-sm text-gray-300 text-right">
+              键盘模拟模式:<br/>
+              1: 雷诀 (张开)<br/>
+              2: 握拳<br/>
+              3: 点赞 (合上四指)<br/>
+              4: 火诀<br/>
+              5: 风诀<br/>
+              6: 阴诀<br/>
+              7: 双手
+            </div>
+          )}
+          <div className="flex items-center gap-3 bg-black/50 px-4 py-2 rounded-full border border-white/10">
+            <span className="text-sm text-gray-300">手势检测</span>
+            <div className={`w-3 h-3 rounded-full ${handDetected ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' : 'bg-gray-600'}`} />
+          </div>
         </div>
 
       </div>
