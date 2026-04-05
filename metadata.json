@@ -1,0 +1,7 @@
+{
+  "name": "结印·阴阳师 (HandSign Buster)",
+  "description": "A 3D real-time hand gesture recognition game using Three.js and MediaPipe Hands.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
